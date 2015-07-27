@@ -1,0 +1,8 @@
+Manifest-version: 1.0
+Extension-Name: @package@
+Specification-Title: @title@
+Specification-Version: @version@
+Specification-Vendor: Zart Colwing
+Implementation-Version: @build.number@
+Implementation-Date: @build.date@
+Sealed: true

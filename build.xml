@@ -1,0 +1,437 @@
+<project name="ZCThread Library" default="build" basedir=".">
+
+	<description>
+		Build rules for the ZCThreads Library.
+	</description>
+
+
+	<!-- ========== load properties =========================================== -->
+
+	<!-- Give user a chance to override without editing this file -->
+	<!-- <property file="${basedir}/build.properties"/> -->     <!-- project -->
+	<!-- <property file="${basedir}/../build.properties"/> -->  <!-- Super     -->
+	<!-- <property file="${user.home}/build.properties"/> -->   <!-- User      -->
+
+
+	<!-- ========== project properties ======================================== -->
+
+	<!-- project properties -->
+	<property name="project.name"           value="zcthreads"/>
+	<property name="project.title"          value="zcthreads Library"/>
+	<property name="project.mainclass"      value=""/>
+	<property name="project.version"        value="1.3"/>
+	<property name="project.copyright"      value="(c) Copyright Zart Colwin, 2000-2003"/>
+
+	<!-- Packaging properties -->
+	<property name="want_package_doc"       value="no"/>
+	<property name="want_package_test"      value="no"/>
+	<property name="want_package_src"       value="no"/>
+
+
+	<!-- ========== libraries ================================================= -->
+
+	<!-- The root of all java libraries -->
+	<property name="javalib"                location="${user.home}/Developer/javalib"/>
+
+	<!-- The list of jar files required to build and run the project -->
+	<!-- all those files will be copied to the ${dist}/lib directory -->
+	<path id="ext_libs">
+	</path>
+
+	<!-- use this section to trigger additional library build before this project -->
+
+
+	<!-- ========== compilers properties ====================================== -->
+
+	<!-- Java compiler properties -->
+	<property name="compiler.debug"         value="true"/>
+	<property name="compiler.deprecation"   value="true"/>
+	<property name="compiler.optimize"      value="true"/>
+
+	<!-- Test runner properties -->
+	<property name="test.failonerror"		value="true"/>
+
+
+	<!-- ========== global properties ========================================= -->
+
+	<!-- The base directory for project sources -->
+	<property name="src.home"               location="src"/>
+
+	<property name="src.java"               location="${src.home}/java"/>
+	<property name="src.test"               location="${src.home}/test"/>
+	<property name="src.rsrc"               location="${src.home}/rsrc"/>
+	<property name="src.meta"               location="${src.java}/META-INF"/>
+
+	<!-- The base directory for compilation targets -->
+	<property name="build.home"             location="build"/>
+
+	<property name="build.classes"          location="${build.home}/classes"/>
+	<property name="build.test"             location="${build.home}/test"/>
+	<property name="build.meta"             location="${build.classes}/META-INF"/>
+
+	<!-- The directory for the documentation -->
+	<property name="docs.home"              location="docs"/>
+	<property name="docs.api"               location="${docs.home}/api"/>
+
+	<!-- The directory for the current distribution targets -->
+	<property name="dist.home"              location="dist"/>
+
+
+	<!-- ========== classpath ================================================= -->
+
+	<!-- classpath used to compile and run the main classes -->
+	<path id="main.classpath">
+		<pathelement location="${build.classes}"/>
+		<path refid="ext_libs"/>
+	</path>
+
+	<!-- classpath used to compile and run Unit-Tests -->
+	<path id="test.classpath">
+		<pathelement location="${build.test}"/>
+		<path refid="main.classpath"/>
+		<pathelement location="${javalib}/junit-3.8.1/junit.jar"/>
+	</path>
+
+
+	<!-- ========== sets ====================================================== -->
+
+	<property name="gremlin_files" value="**/*~*/**,**/Icon?,**/.DS_Store,**/package?cache/**,**/dependency?cache/**"/>
+
+	<!-- Exclude all tests sources (unit tests and standalone tests) -->
+	<patternset id="non_test_java_files" excludes="${gremlin_files}">
+		<include name="**/*.java"/>
+		<exclude name="**/Test*.java"/>
+	</patternset>
+
+	<!-- Include only tests sources. Tests have a "Test_" prefix -->
+	<patternset id="test_java_files" excludes="${gremlin_files}">
+		<include name="**/Test_*.java"/>
+	</patternset>
+
+	<!-- Include everything except java sources -->
+	<patternset id="non_java_files" excludes="${gremlin_files}">
+		<exclude name="**/*.java"/>
+	</patternset>
+
+	<!-- Include everything -->
+	<patternset id="rsrc" excludes="${gremlin_files}">
+		<include name="**/*"/>
+	</patternset>
+
+
+	<!-- ========== init ====================================================== -->
+
+	<target name="init">
+		<!-- Update the build.number file-->
+		<propertyfile file="${src.home}/build.number">
+			<entry  key="build.date" type="date" value="now" pattern="yyyy/MM/dd"/>
+			<entry  key="build.number" type="int" operation="+" default="0"/>
+		</propertyfile>
+
+		<!-- Load the updated build.number file -->
+		<property file="${src.home}/build.number"/>
+
+		<echo level="info" message=""/>
+		<echo message="--- ${project.name} ${project.version} build ${build.number} ---"/>
+
+
+		<available file="${src.rsrc}" type="dir" property="rsrc_exists"/>
+		<available file="${src.test}" type="dir" property="test_exists"/>
+
+
+		<!-- ========== text filter =============================================== -->
+
+		<filter token="name"                value="${project.name}"/>
+		<filter token="title"               value="${project.title}"/>
+		<filter token="version"             value="${project.version}"/>
+		<filter token="copyright"           value="${project.copyright}"/>
+		<filter token="mainclass"           value="${project.mainclass}"/>
+		<filter token="build.date"          value="${build.date}"/>
+		<filter token="build.number"        value="${build.number}"/>
+	</target>
+
+
+	<!-- ========== all ======================================================= -->
+
+	<target name="all" description="Cleanup, build and package everything"
+		depends="clean,build,doc,dist">
+	</target>
+
+
+	<!-- ========== clean ===================================================== -->
+
+	<target name="clean" description="Cleanup the build directory">
+		<!-- Fast and easy way to cleanup -->
+		<delete dir="${build.home}"/>
+	</target>
+
+
+	<!-- ========== build ===================================================== -->
+
+	<target name="build" description="Build into the 'build' directory"
+		depends="init,compile.sources">
+	</target>
+
+	<target name="compile.init">
+		<!-- Create the destination directories -->
+		<mkdir dir="${build.home}"/>
+		<mkdir dir="${build.classes}"/>
+	</target>
+
+	<target name="compile.sources"
+		depends="compile.init">
+		<!-- Compile all java files from the java source hierarchy -->
+		<javac srcdir="${src.java}"
+			  destdir="${build.classes}"
+				debug="${compiler.debug}"
+		  deprecation="${compiler.deprecation}"
+			 optimize="${compiler.optimize}">
+			<classpath refid="main.classpath"/>
+			<patternset refid="non_test_java_files"/>
+		</javac>
+
+		<!-- Create stubs for remote objets -->
+		<rmic verify="yes"
+			stubVersion="1.2"
+			base="${build.classes}"
+			includes="**/Remote*.class">
+			<classpath refid="main.classpath"/>
+		</rmic>
+
+		<!-- Copy all non java files present in the java source hierarchy -->
+		<copy todir="${build.classes}" filtering="on" includeEmptyDirs="no">
+			<fileset dir="${src.java}">
+				<patternset refid="non_java_files"/>
+			</fileset>
+		</copy>
+
+		<!-- Copy all files and directories present in the src/rsrc hierarchy -->
+		<antcall target="copy.rsrc">
+			<param name="src" value="${src.rsrc}"/>
+			<param name="dest" value="${build.home}"/>
+		</antcall>
+	</target>
+
+	<target name="copy.rsrc" if="rsrc_exists">
+		<copy todir="${dest}" filtering="on">
+			<fileset dir="${src}">
+				<patternset refid="rsrc"/>
+			</fileset>
+		</copy>
+	</target>
+
+
+	<!-- ========== javadoc =================================================== -->
+
+	<target name="doc" description="Build the Javadoc"
+		depends="init">
+		<antcall target="compile.javadoc">
+			<param name="dest" value="${docs.home}/api"/>
+			<param name="private" value="true"/>
+		</antcall>
+	</target>
+
+	<target name="compile.javadoc">
+		<!-- Create the destination directory -->
+		<mkdir dir="${dest}"/>
+		<javadoc	destdir="${dest}"
+					 author="true"
+					private="${private}"
+					version="true"
+						use="true"
+				windowtitle="${project.title} version ${project.version} API Specification"
+				   doctitle="${project.title} version ${project.version}"
+					 header="${project.title} version ${project.version}"
+					 footer="${project.copyright}">
+			<classpath refid="main.classpath"/>
+			<packageset dir="${src.java}" excludes="${gremlin_files}"/>
+		</javadoc>
+	</target>
+
+
+	<!-- ========== unit test ================================================= -->
+
+	<target name="test" description="Compile and run all JUnit tests"
+		depends="compile.test" if="test_exists">
+		<!-- Run all tests found in the tests source hierarchy -->
+		<junit printsummary="withOutAndErr" fork="yes" haltonfailure="${test.failonerror}">
+			<classpath refid="test.classpath"/>
+			<formatter type="xml" usefile="true"/>
+			<batchtest todir="${build.test}">
+				<fileset dir="${src.test}">
+					<patternset refid="test_java_files"/>
+				</fileset>
+			</batchtest>
+		</junit>
+	</target>
+
+	<target name="compile.test"
+		depends="compile.sources" if="test_exists">
+		<mkdir dir="${build.test}"/>
+		<!-- Compile all Test java file from the test source hierarchy -->
+		<javac srcdir="${src.test}"
+			  destdir="${build.test}"
+				debug="${compiler.debug}"
+		  deprecation="${compiler.deprecation}"
+			 optimize="${compiler.optimize}">
+			<classpath refid="test.classpath"/>
+			<patternset refid="test_java_files"/>
+		</javac>
+		<!-- Copy all non java files present in the test source hierarchy -->
+		<copy todir="${build.test}" filtering="off" includeEmptyDirs="no">
+			<fileset dir="${src.test}">
+				<patternset refid="non_java_files"/>
+			</fileset>
+		</copy>
+	</target>
+
+	<target name="compile.test_result"
+		depends="test" if="test_exists">
+		<mkdir dir="${dest}"/>
+		<!-- Compile the testresults files and build the html files -->
+		<junitreport todir="${build.test}">
+			<fileset dir="${build.test}">
+				<include name="TEST-*.xml"/>
+			</fileset>
+			<report format="frames" todir="${dest}"/>
+		</junitreport>
+	</target>
+
+
+	<!-- ========== dist ====================================================== -->
+
+	<target name="dist" description="Create the distribution including docs, tests and sources"
+		depends="clean,package.jar,package.test,package.doc,package.src">
+		<!-- Make the final distribution xxx.tar.gz file -->
+		<tar tarfile="${dist.home}/${dist.file_prefix}.tgz" basedir="${dist.tmp}" compression="gzip" longfile="gnu"/>
+		<delete dir="${dist.tmp}"/>
+	</target>
+
+	<target name="package.init"
+		depends="init">
+		<!-- The prefix used to name the distribution files -->
+		<property name="dist.file_prefix" value="${project.name}-${project.version}-build${build.number}"/>
+
+		<!-- The directory where to assemble the distribution -->
+		<property name="dist.tmp"               location="${dist.home}/tmp"/>
+		<property name="dist.tmp.lib"           location="${dist.tmp}/lib"/>
+		<property name="dist.tmp.doc"           location="${dist.tmp}/docs"/>
+		<property name="dist.tmp.javadoc"       location="${dist.tmp}/docs/api"/>
+		<property name="dist.tmp.junit_report"  location="${dist.tmp}/docs/junit_report"/>
+
+		<delete dir="${dist.tmp}"/>
+		<mkdir dir="${dist.tmp}"/>
+	</target>
+
+
+	<target name="package.jar" description="Create only the executable jar (no doc, no test)"
+		depends="package.init,compile.sources,package.libs">
+		<property name="theClassPath" value=""/>
+		<!-- copy the manifest with filtering -->
+		<copy filtering="on" overwrite="on"
+			file="${src.meta}/MANIFEST.MF"
+			tofile="${build.meta}/MANIFEST.MF">
+			<filterset>
+				<filter token="classpath" value="${theClassPath}"/>
+			</filterset>
+		</copy>
+		<!-- assemble all files from ${build.classes} into a jar file -->
+		<jar jarfile="${dist.tmp}/${dist.file_prefix}.jar"
+			manifest="${build.meta}/MANIFEST.MF">
+			<fileset dir="${build.classes}">
+				<patternset refid="rsrc"/>
+				<exclude name="**/MANIFEST.MF"/>
+			</fileset>
+		</jar>
+		<!-- Copy all files and directories present in the src/rsrc hierarchy into dist.tmp -->
+		<antcall target="copy.rsrc">
+			<param name="src" value="${src.rsrc}"/>
+			<param name="dest" value="${dist.tmp}"/>
+		</antcall>
+	</target>
+
+
+	<target name="package.libs"
+		depends="package.init,check.package_libs" if="do_package_libs">
+		<mkdir dir="${dist.tmp.lib}"/>
+		<copy todir="${dist.tmp.lib}" flatten="true">
+			<fileset dir="/" includes="${ext_libs_files}"/>
+		</copy>
+		<!-- create a path that reference all jars copied into the lib directory
+		This path, stored in the variable theClassPath will be used to
+		fill the "classpath" property in the MANIFEST.MF file -->
+		<pathconvert pathsep=" " property="theClassPath">
+			<path>
+				<!-- make sure the classpath property reference each
+				*.jar and *.zip file present in the lib directory -->
+				<fileset dir="${dist.tmp.lib}" includes="*.jar,*.zip"/>
+			</path>
+			<!-- map from absolute to relative path -->
+			<map from="${dist.tmp.lib}" to="lib"/>
+		</pathconvert>
+	</target>
+
+	<target name="check.package_libs">
+		<pathconvert pathsep="," property="ext_libs_files">
+			<path refid="ext_libs"/>
+			<map from="/" to=""/>
+		</pathconvert>
+		<condition property="do_package_libs">
+			<not>
+				<equals arg1="${ext_libs_files}" arg2=""/>
+			</not>
+		</condition>
+	</target>
+
+
+	<target name="package.test"
+		depends="package.init,check.package_test" if="do_package_test">
+		<antcall target="compile.test_result">
+			<param name="dest" value="${dist.tmp.junit_report}"/>
+		</antcall>
+	</target>
+
+	<target name="check.package_test">
+		<condition property="do_package_test">
+			<and>
+				<istrue value="${want_package_test}"/>
+				<isset property="test_exists"/>
+			</and>
+		</condition>
+	</target>
+
+
+	<target name="package.doc"
+		depends="package.init,check.package_doc" if="do_package_doc">
+		<antcall target="compile.javadoc">
+			<param name="dest" value="${dist.tmp.javadoc}"/>
+			<param name="private" value="false"/>
+		</antcall>
+	</target>
+
+	<target name="check.package_doc">
+		<condition property="do_package_doc">
+			<istrue value="${want_package_doc}"/>
+		</condition>
+	</target>
+
+
+	<target name="package.src"
+		depends="package.init,check.package_src" if="do_package_src">
+		<tar tarfile="${dist.tmp}/src.tgz" basedir="."
+			includes="${src.home}/**,${docs.home}/**"
+			excludes="${docs.api}/**"
+			compression="gzip"
+			longfile="gnu"
+		/>
+	</target>
+
+	<target name="check.package_src">
+		<condition property="do_package_src">
+			<istrue value="${want_package_src}"/>
+		</condition>
+	</target>
+
+</project>
+
+<!-- ========== That's All Folks ========================================== -->
